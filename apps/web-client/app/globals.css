@@ -1,0 +1,286 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --ring: 214.3 31.8% 91.4%;
+  --background: 0 0% 100%;
+}
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  }
+  
+  /* Night theme styles */
+  .night body {
+    background-color: black !important;
+    color: white !important;
+  }
+  
+  /* Force main container to be black in night theme */
+  .night {
+    background-color: black !important;
+  }
+  
+  /* Override specific white backgrounds */
+  .night .bg-white {
+    background-color: black !important;
+  }
+  
+  .night .bg-gray-50 {
+    background-color: black !important;
+  }
+  
+  .night .bg-gray-100 {
+    background-color: #111111 !important;
+  }
+  
+  .night .bg-gray-200 {
+    background-color: #1a1a1a !important;
+  }
+  
+  /* User message bubbles - should be dark gray, not white */
+  .night .chat-message-user {
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
+    color: #e5e5e5 !important;
+  }
+  
+  /* Assistant message bubbles */
+  .night .chat-message-assistant {
+    background-color: #111111 !important;
+    border-color: #333333 !important;
+    color: #e5e5e5 !important;
+  }
+  
+  /* Input field styling */
+  .night textarea {
+    background-color: #1a1a1a !important;
+    color: #e5e5e5 !important;
+    border-color: #333333 !important;
+  }
+  
+  .night textarea::placeholder {
+    color: #9ca3af !important;
+  }
+  
+  /* Input container backgrounds */
+  .night div[class*="rounded-xl border-2"] {
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
+  }
+  
+  /* Button backgrounds */
+  .night .btn-ghost {
+    background-color: transparent !important;
+    color: #e5e5e5 !important;
+  }
+  
+  .night .btn-ghost:hover {
+    background-color: #1a1a1a !important;
+    color: white !important;
+  }
+  
+  /* Card backgrounds */
+  .night .card {
+    background-color: #111111 !important;
+    border-color: #333333 !important;
+  }
+  
+  /* Sidebar styling */
+  .night [class*="border-r"] {
+    background-color: black !important;
+    border-color: #333333 !important;
+  }
+  
+  /* Header styling */
+  .night header {
+    background-color: black !important;
+    border-color: #333333 !important;
+  }
+  
+  /* Main container */
+  .night div[class*="h-screen flex"] {
+    background-color: black !important;
+  }
+  
+  /* Text colors for better readability */
+  .night .text-gray-400 {
+    color: #9ca3af !important;
+  }
+  
+  .night .text-gray-500 {
+    color: #9ca3af !important;
+  }
+  
+  .night .text-gray-600 {
+    color: #d1d5db !important;
+  }
+  
+  .night .text-gray-800 {
+    color: #e5e5e5 !important;
+  }
+  
+  .night .text-gray-900 {
+    color: white !important;
+  }
+  
+  /* Error message styling - softer color */
+  .night .text-red-500 {
+    color: #fca5a5 !important;
+  }
+  
+  .night .text-red-600 {
+    color: #fca5a5 !important;
+  }
+  
+  /* Border colors */
+  .night .border-gray-200 {
+    border-color: #333333 !important;
+  }
+  
+  .night .border-gray-300 {
+    border-color: #404040 !important;
+  }
+  
+  .night .border-gray-600 {
+    border-color: #404040 !important;
+  }
+  
+  .night .border-gray-700 {
+    border-color: #404040 !important;
+  }
+  
+  .night .border-gray-800 {
+    border-color: #404040 !important;
+  }
+  
+  /* Hover states */
+  .night .hover\:bg-gray-50:hover {
+    background-color: #1a1a1a !important;
+  }
+  
+  .night .hover\:bg-gray-100:hover {
+    background-color: #1a1a1a !important;
+  }
+  
+  .night .hover\:bg-gray-200:hover {
+    background-color: #262626 !important;
+  }
+  
+  .night .hover\:bg-gray-700:hover {
+    background-color: #262626 !important;
+  }
+  
+  .night .hover\:bg-gray-800:hover {
+    background-color: #262626 !important;
+  }
+  
+  /* Focus states */
+  .night textarea:focus {
+    background-color: #1a1a1a !important;
+    color: #e5e5e5 !important;
+    border-color: #404040 !important;
+  }
+  
+  /* Document editor specific */
+  .night .document-editor {
+    background-color: #1a1a1a !important;
+  }
+  
+  /* Override any inline styles */
+  .night [style*="background-color: white"],
+  .night [style*="background: white"] {
+    background-color: black !important;
+  }
+  
+  .night [style*="background-color: #ffffff"],
+  .night [style*="background: #ffffff"] {
+    background-color: black !important;
+  }
+  
+  code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+  }
+  
+  .btn-ghost {
+    @apply hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-200;
+  }
+  
+  .night .btn-ghost {
+    background-color: transparent !important;
+    color: #e5e5e5 !important;
+  }
+  
+  .night .btn-ghost:hover {
+    background-color: #262626 !important;
+    color: white !important;
+  }
+  
+  .input {
+    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ring-offset-background;
+  }
+  
+  .card {
+    @apply rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:bg-gray-800 dark:border-gray-700;
+  }
+  
+  .night .card {
+    background-color: #1a1a1a !important;
+    border-color: #404040 !important;
+  }
+  
+  .chat-message {
+    @apply animate-fade-in;
+  }
+  
+  .chat-message-user {
+    @apply bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-700;
+  }
+  
+  .chat-message-assistant {
+    @apply bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700;
+  }
+  
+  .night .chat-message-assistant {
+    background-color: #111111 !important;
+    border-color: #333333 !important;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+} 

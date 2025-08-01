@@ -1,0 +1,2453 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { 
+  Send, FileText, Code, Zap, Settings, Plus, MessageSquare, Brain, Upload, Download, Trash2, Edit3, Copy, Check, X, 
+  ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Users, Mic, MicOff, Volume2, VolumeX, Search, Filter, Share2, 
+  Bookmark, Clock, BarChart3, Play, Square, RotateCcw, Eye, EyeOff, Palette, Keyboard, GitBranch, Database, Shield, 
+  Globe, Lock, Unlock, Terminal, Cpu, HardDrive, Wifi, WifiOff, AlertCircle, CheckCircle, Info, Star, Heart, BookOpen, 
+  Calendar, Timer, Target, TrendingUp, Users2, UserPlus, UserMinus, Bell, Moon, Sun, Monitor, Smartphone, Tablet, 
+  Maximize2, Minimize2, Split, Grid, List, Columns, Rows, Folder, FolderOpen, File, FilePlus, FileMinus, Save, SaveAll, 
+  Undo, Redo, Scissors, Link, Unlink, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Indent, Outdent, 
+  Quote, Code2, Table, Image, Video, Music, MapPin, Mail, Phone, MessageCircle, Navigation, Compass, Home, Building, 
+  Car, Plane, Train, Bus, Bike, Gamepad2, Headphones, Speaker, Volume1, Repeat, Shuffle, SkipBack, SkipForward, Pause, 
+  Disc, Radio, Tv, Watch, Camera, CameraOff, VideoOff, ImageOff, Server, ServerOff, Cloud, CloudOff, Signal, Battery, 
+  Power, PowerOff, Flame, Droplets, Wind, Atom, Dna, Microscope, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Triangle, 
+  Circle, Hexagon, Octagon, Pentagon, Diamond, Cross, Minus, Divide, Equal, Infinity, Pi, Sigma, Layers 
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+  model?: string
+  attachments?: string[]
+}
+
+interface Conversation {
+  id: string
+  title: string
+  messages: Message[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface Task {
+  id: string
+  title: string
+  description: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  steps: TaskStep[]
+  createdAt: Date
+}
+
+interface TaskStep {
+  id: string
+  title: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  output?: string
+}
+
+interface WorkspaceTemplate {
+  id: string
+  name: string
+  description: string
+  icon: string
+  category: 'development' | 'writing' | 'analysis' | 'design' | 'research'
+  settings: any
+}
+
+interface FileUpload {
+  id: string
+  name: string
+  type: string
+  size: number
+  url: string
+  uploadedAt: Date
+}
+
+interface CollaborationUser {
+  id: string
+  name: string
+  email: string
+  avatar: string
+  status: 'online' | 'offline' | 'away'
+  lastSeen: Date
+}
+
+interface CodeExecution {
+  id: string
+  code: string
+  language: string
+  output: string
+  error?: string
+  executionTime: number
+  timestamp: Date
+}
+
+export default function WorkspacePage() {
+  const [activeTab, setActiveTab] = useState<'chat' | 'document' | 'tasks'>('chat')
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [activeConversation, setActiveConversation] = useState<string | null>(null)
+  const [documentContent, setDocumentContent] = useState('')
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [showSidebar, setShowSidebar] = useState(true)
+  const [selectedModel, setSelectedModel] = useState('gpt-4')
+  const [showModelSelector, setShowModelSelector] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [settings, setSettings] = useState({
+    autoSave: true,
+    theme: 'light',
+    fontSize: 'medium',
+    enableNotifications: true,
+    enableSound: false,
+    autoScroll: true,
+    compactMode: false,
+    showLineNumbers: true,
+    enableAutoComplete: true,
+    enableSpellCheck: true,
+    language: 'en',
+    timezone: 'UTC',
+    dateFormat: 'MM/DD/YYYY',
+    timeFormat: '12h'
+  })
+
+  const [user, setUser] = useState({
+    isLoggedIn: false,
+    email: '',
+    name: '',
+    avatar: '',
+    subscription: 'free',
+    usage: {
+      requests: 0,
+      limit: 100,
+      resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    }
+  })
+
+  // Advanced Features State
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([])
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [codeExecutions, setCodeExecutions] = useState<CodeExecution[]>([])
+  const [isExecutingCode, setIsExecutingCode] = useState(false)
+  const [collaborationUsers, setCollaborationUsers] = useState<CollaborationUser[]>([])
+  const [showCollaboration, setShowCollaboration] = useState(false)
+  const [workspaceTemplates, setWorkspaceTemplates] = useState<WorkspaceTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    responseTime: 0,
+    memoryUsage: 0,
+    cpuUsage: 0,
+    networkLatency: 0
+  })
+  const [showPerformance, setShowPerformance] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+  const [aiModelSettings, setAiModelSettings] = useState({
+    temperature: 0.7,
+    maxTokens: 2048,
+    topP: 0.9,
+    frequencyPenalty: 0,
+    presencePenalty: 0
+  })
+
+  // New UI Enhancement State
+  const [showHistory, setShowHistory] = useState(false)
+  const [showMemory, setShowMemory] = useState(false)
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
+  const [showSlashCommands, setShowSlashCommands] = useState(false)
+  const [documentHistory, setDocumentHistory] = useState<string[]>([])
+  const [currentDocumentVersion, setCurrentDocumentVersion] = useState(0)
+  const [isTyping, setIsTyping] = useState(false)
+
+  // Next-Level UI State
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0)
+  const [showQuickActions, setShowQuickActions] = useState(true)
+  const [showPromptConstructor, setShowPromptConstructor] = useState(false)
+  const [selectedOutput, setSelectedOutput] = useState<string | null>(null)
+  const [showOutputToolbar, setShowOutputToolbar] = useState(false)
+  const [aiAvatarState, setAiAvatarState] = useState<'idle' | 'typing' | 'thinking'>('idle')
+  const [pinnedContext, setPinnedContext] = useState<string[]>([])
+
+  // Audio Input State
+  const [isListening, setIsListening] = useState(false)
+  const [transcript, setTranscript] = useState('')
+  const [recognition, setRecognition] = useState<any>(null)
+
+  // Advanced Command UI State
+  const [detectedIntent, setDetectedIntent] = useState<string | null>(null)
+  const [showIntentPreview, setShowIntentPreview] = useState(false)
+  const [commandHistory, setCommandHistory] = useState<string[]>([])
+  const [favoritePrompts, setFavoritePrompts] = useState<string[]>([])
+  const [showMemoryStrip, setShowMemoryStrip] = useState(false)
+  const [modelComparison, setModelComparison] = useState(false)
+
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const createNewConversation = () => {
+    const newConversation: Conversation = {
+      id: Date.now().toString(),
+      title: 'New Conversation',
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    setConversations(prev => [newConversation, ...prev])
+    setActiveConversation(newConversation.id)
+    setMessages([])
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  // Apply dark mode class to HTML element
+  useEffect(() => {
+    const html = document.documentElement
+    if (settings.theme === 'dark') {
+      html.classList.add('dark')
+    } else {
+      html.classList.remove('dark')
+    }
+  }, [settings.theme])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K to focus input
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        const textarea = document.querySelector('textarea') as HTMLTextAreaElement
+        textarea?.focus()
+      }
+      
+      // Cmd/Ctrl + N for new conversation
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        createNewConversation()
+      }
+      
+      // Escape to close modals
+      if (e.key === 'Escape') {
+        setShowSettings(false)
+        setShowModelSelector(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date(),
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      // Simulate AI response with different models based on content
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      let model = selectedModel
+      let response = ''
+      
+      if (input.toLowerCase().includes('code') || input.toLowerCase().includes('function')) {
+        model = 'gpt-4'
+        response = `Here's the code you requested:\n\n\`\`\`javascript\nfunction example() {\n  console.log("Hello from ${model}!");\n  return "success";\n}\n\`\`\`\n\nThis code demonstrates a simple function that logs a message and returns a value. You can customize it based on your specific needs.`
+      } else if (input.toLowerCase().includes('summarize') || input.toLowerCase().includes('summary')) {
+        model = 'claude-3-sonnet'
+        response = `Here's a summary of your request:\n\n**Key Points:**\n- Main topic: ${input}\n- Key insights: This appears to be a request for summarization\n- Action items: Consider breaking this down into smaller tasks\n\n**Recommendations:**\n1. Clarify the specific content you'd like summarized\n2. Provide context about the source material\n3. Specify the desired length and format\n\nThis response was generated using ${model} for optimal summarization.`
+      } else {
+        model = 'gpt-4'
+        response = `I understand you're asking about: "${input}". This is a comprehensive response from ${model}.\n\n**Analysis:**\nYour question touches on several important aspects that we can explore further. Here are some key considerations:\n\n1. **Context**: Understanding the broader context of your question\n2. **Implementation**: Practical steps to address your needs\n3. **Best Practices**: Recommended approaches based on current standards\n\n**Next Steps:**\n- Would you like me to elaborate on any specific aspect?\n- Should we explore related topics or examples?\n- Do you need help implementing any of these suggestions?\n\nI'm here to help you dive deeper into any of these areas!`
+      }
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+        model,
+      }
+
+      setMessages(prev => [...prev, aiMessage])
+      
+      // Update conversation title if it's the first message
+      if (messages.length === 0 && activeConversation) {
+        const title = input.length > 50 ? input.substring(0, 50) + '...' : input
+        setConversations(prev => prev.map(conv => 
+          conv.id === activeConversation 
+            ? { ...conv, title, updatedAt: new Date() }
+            : conv
+        ))
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
+  const deleteConversation = (id: string) => {
+    setConversations(prev => prev.filter(conv => conv.id !== id))
+    if (activeConversation === id) {
+      setActiveConversation(null)
+      setMessages([])
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+  }
+
+  const aiActions = [
+    { 
+      icon: FileText, 
+      label: 'Rewrite', 
+      action: () => {
+        if (documentContent) {
+          setDocumentContent(documentContent + '\n\n[AI Rewrite: Enhanced version with improved clarity and structure]')
+        }
+      }
+    },
+    { 
+      icon: Brain, 
+      label: 'Summarize', 
+      action: () => {
+        if (documentContent) {
+          setDocumentContent(documentContent + '\n\n[AI Summary: Key points extracted from the document]')
+        }
+      }
+    },
+    { 
+      icon: Code, 
+      label: 'Format as Code', 
+      action: () => {
+        if (documentContent) {
+          setDocumentContent('```\n' + documentContent + '\n```')
+        }
+      }
+    },
+    { 
+      icon: Zap, 
+      label: 'Expand', 
+      action: () => {
+        if (documentContent) {
+          setDocumentContent(documentContent + '\n\n[AI Expansion: Additional details and examples added]')
+        }
+      }
+    },
+  ]
+
+  const taskTemplates = [
+    {
+      id: 'blog-api',
+      title: 'Build Blog API',
+      description: 'Create a complete blog API with CRUD operations',
+      steps: ['Design database schema', 'Create API endpoints', 'Add authentication', 'Write tests']
+    },
+    {
+      id: 'react-components',
+      title: 'React Component Library',
+      description: 'Generate a reusable React component library',
+      steps: ['Design component architecture', 'Create base components', 'Add TypeScript types', 'Write documentation']
+    },
+    {
+      id: 'database-schema',
+      title: 'Database Schema Design',
+      description: 'Design and generate database schemas',
+      steps: ['Analyze requirements', 'Design ERD', 'Generate SQL', 'Create migrations']
+    }
+  ]
+
+  const createTask = (template: typeof taskTemplates[0]) => {
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: template.title,
+      description: template.description,
+      status: 'pending',
+      steps: template.steps.map((step, index) => ({
+        id: `${Date.now()}-${index}`,
+        title: step,
+        status: 'pending' as const
+      })),
+      createdAt: new Date()
+    }
+    setTasks(prev => [newTask, ...prev])
+  }
+
+  // Advanced Features Functions
+  const toggleVoiceInput = () => {
+    setIsVoiceEnabled(!isVoiceEnabled)
+    if (!isVoiceEnabled) {
+      // Initialize speech recognition
+      if ('webkitSpeechRecognition' in window) {
+        const recognition = new (window as any).webkitSpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map(result => result.transcript)
+            .join('')
+          setInput(transcript)
+        }
+        recognition.start()
+        setIsRecording(true)
+      }
+    } else {
+      setIsRecording(false)
+    }
+  }
+
+  const toggleAudioOutput = () => {
+    setIsAudioEnabled(!isAudioEnabled)
+  }
+
+  const handleFileUpload = (files: FileList) => {
+    const newFiles: FileUpload[] = Array.from(files).map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: URL.createObjectURL(file),
+      uploadedAt: new Date()
+    }))
+    setUploadedFiles(prev => [...prev, ...newFiles])
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const files = e.dataTransfer.files
+    handleFileUpload(files)
+  }
+
+  const executeCode = async (code: string, language: string) => {
+    setIsExecutingCode(true)
+    const startTime = Date.now()
+    
+    try {
+      // Simulate code execution
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const execution: CodeExecution = {
+        id: Math.random().toString(36).substr(2, 9),
+        code,
+        language,
+        output: `Output for ${language} code execution...`,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date()
+      }
+      
+      setCodeExecutions(prev => [execution, ...prev])
+    } catch (error) {
+      const execution: CodeExecution = {
+        id: Math.random().toString(36).substr(2, 9),
+        code,
+        language,
+        output: '',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        executionTime: Date.now() - startTime,
+        timestamp: new Date()
+      }
+      setCodeExecutions(prev => [execution, ...prev])
+    } finally {
+      setIsExecutingCode(false)
+    }
+  }
+
+  const exportWorkspace = () => {
+    const workspaceData = {
+      conversations,
+      documentContent,
+      tasks,
+      settings,
+      timestamp: new Date()
+    }
+    const blob = new Blob([JSON.stringify(workspaceData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `neuropilot-workspace-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importWorkspace = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string)
+        if (data.conversations) setConversations(data.conversations)
+        if (data.documentContent) setDocumentContent(data.documentContent)
+        if (data.tasks) setTasks(data.tasks)
+        if (data.settings) setSettings(data.settings)
+      } catch (error) {
+        console.error('Failed to import workspace:', error)
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const searchWorkspace = (query: string) => {
+    setSearchQuery(query)
+    // Implement search logic here
+  }
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }
+
+  const models = [
+    { id: 'gpt-4', name: 'GPT-4', description: 'Best for reasoning and analysis' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Fast and cost-effective' },
+    { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', description: 'Excellent for summarization' },
+    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', description: 'Fast and efficient' }
+  ]
+
+  // Dynamic placeholders for input
+  const placeholders = [
+    "Ask me to generate an API endpoint...",
+    "Need help with a React component?",
+    "Summarize this document for me...",
+    "Debug this code snippet...",
+    "Create a database schema...",
+    "Write a blog post about...",
+    "Explain this concept in simple terms...",
+    "Optimize this algorithm...",
+    "Generate test cases for...",
+    "Refactor this function..."
+  ]
+
+  // Dynamic Prompt Feed - Clickable suggestions
+  const promptSuggestions = [
+    { text: "Generate a login form", icon: "🔐", category: "UI" },
+    { text: "Summarize this article", icon: "📝", category: "Content" },
+    { text: "Fix this function", icon: "🔧", category: "Code" },
+    { text: "Plan a content calendar", icon: "📅", category: "Planning" },
+    { text: "Create a REST API", icon: "🌐", category: "Backend" },
+    { text: "Optimize database queries", icon: "⚡", category: "Performance" },
+    { text: "Write unit tests", icon: "🧪", category: "Testing" },
+    { text: "Design a user flow", icon: "🎨", category: "Design" },
+    { text: "Analyze this data", icon: "📊", category: "Analytics" },
+    { text: "Generate documentation", icon: "📚", category: "Docs" }
+  ]
+
+
+
+  // Command Palette Options
+  const commandPaletteOptions = [
+    { id: 'new-chat', label: 'New Chat', icon: Plus, action: createNewConversation },
+    { id: 'switch-model', label: 'Switch Model', icon: Settings, action: () => setShowModelSelector(true) },
+    { id: 'toggle-theme', label: 'Toggle Theme', icon: settings.theme === 'dark' ? Sun : Moon, action: () => setSettings(prev => ({ ...prev, theme: prev.theme === 'dark' ? 'light' : 'dark' })) },
+    { id: 'export-workspace', label: 'Export Workspace', icon: Download, action: exportWorkspace },
+    { id: 'show-shortcuts', label: 'Keyboard Shortcuts', icon: Keyboard, action: () => setShowKeyboardShortcuts(true) }
+  ]
+
+  // Prompt Constructor Blocks
+  const promptBlocks = [
+    { type: 'task', options: ['Summarize', 'Analyze', 'Generate', 'Debug', 'Optimize'] },
+    { type: 'input', options: ['Text', 'URL', 'File', 'Code', 'Data'] },
+    { type: 'tone', options: ['Professional', 'Casual', 'Academic', 'Creative', 'Technical'] },
+    { type: 'format', options: ['Paragraph', 'List', 'Table', 'Code', 'Chart'] }
+  ]
+
+  // Advanced Slash Commands with Intent Detection
+  const slashCommands = [
+    { command: '/code', description: 'Generate code', icon: Code, category: 'development', examples: ['React component', 'API endpoint', 'Database query'] },
+    { command: '/summarize', description: 'Summarize content', icon: FileText, category: 'content', examples: ['Article', 'Document', 'Meeting notes'] },
+    { command: '/refactor', description: 'Refactor code', icon: RotateCcw, category: 'development', examples: ['Improve performance', 'Clean code', 'Best practices'] },
+    { command: '/debug', description: 'Debug code', icon: AlertCircle, category: 'development', examples: ['Fix error', 'Find bug', 'Performance issue'] },
+    { command: '/explain', description: 'Explain concept', icon: BookOpen, category: 'learning', examples: ['Algorithm', 'Framework', 'Technology'] },
+    { command: '/optimize', description: 'Optimize code', icon: Zap, category: 'development', examples: ['Performance', 'Memory usage', 'Speed'] },
+    { command: '/translate', description: 'Translate text', icon: Globe, category: 'content', examples: ['To Spanish', 'To French', 'To Japanese'] },
+    { command: '/format', description: 'Format content', icon: AlignLeft, category: 'content', examples: ['Markdown', 'JSON', 'Table'] },
+    { command: '/analyze', description: 'Analyze data', icon: BarChart3, category: 'analysis', examples: ['Trends', 'Patterns', 'Insights'] },
+    { command: '/compare', description: 'Compare models', icon: GitBranch, category: 'advanced', examples: ['GPT-4 vs Claude', 'Different approaches'] }
+  ]
+
+  // Intent Detection Patterns
+  const intentPatterns = [
+    { pattern: /(react|vue|angular|component|jsx|tsx)/i, intent: 'React/Vue Component', model: 'gpt-4', icon: Code },
+    { pattern: /(api|endpoint|rest|graphql)/i, intent: 'API Development', model: 'gpt-4', icon: Server },
+    { pattern: /(database|sql|mongodb|postgres)/i, intent: 'Database Query', model: 'gpt-4', icon: Database },
+    { pattern: /(debug|error|bug|fix)/i, intent: 'Debug Code', model: 'gpt-4', icon: AlertCircle },
+    { pattern: /(summarize|summary|brief)/i, intent: 'Summarize Content', model: 'claude-3-sonnet', icon: FileText },
+    { pattern: /(explain|what is|how does)/i, intent: 'Explain Concept', model: 'gpt-4', icon: BookOpen },
+    { pattern: /(optimize|performance|speed)/i, intent: 'Optimize Code', model: 'gpt-4', icon: Zap },
+    { pattern: /(translate|language)/i, intent: 'Translate Text', model: 'claude-3-sonnet', icon: Globe },
+    { pattern: /(analyze|trend|pattern)/i, intent: 'Data Analysis', model: 'gpt-4', icon: BarChart3 }
+  ]
+
+  // Smart Suggestions based on context
+  const getSmartSuggestions = (input: string) => {
+    const suggestions = []
+    
+    if (input.includes('react') || input.includes('component')) {
+      suggestions.push('Generate a React functional component')
+      suggestions.push('Add TypeScript types to this component')
+      suggestions.push('Create a custom hook for this logic')
+    }
+    
+    if (input.includes('api') || input.includes('endpoint')) {
+      suggestions.push('Create a REST API endpoint')
+      suggestions.push('Add authentication to this API')
+      suggestions.push('Implement error handling')
+    }
+    
+    if (input.includes('error') || input.includes('bug')) {
+      suggestions.push('Debug this error step by step')
+      suggestions.push('Suggest alternative approaches')
+      suggestions.push('Check for common issues')
+    }
+    
+    return suggestions.slice(0, 3)
+  }
+
+  // AI Greeting messages
+  const aiGreetings = [
+    "Hey there! 👋 Ready to build something amazing?",
+    "Hello! 🚀 What can I help you create today?",
+    "Hi! ✨ Let's turn your ideas into reality!",
+    "Welcome back! 🎯 What's on your mind?",
+    "Greetings! 🌟 Ready to code, write, or analyze?"
+  ]
+
+  // Get current greeting and placeholder
+  const currentGreeting = aiGreetings[Math.floor(Date.now() / 300000) % aiGreetings.length] // Changes every 5 minutes
+  const currentPlaceholder = placeholders[currentPlaceholderIndex]
+
+  // Rotate placeholders and prompt suggestions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPlaceholderIndex((prev) => (prev + 1) % placeholders.length)
+      setCurrentPromptIndex((prev) => (prev + 1) % promptSuggestions.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // AI Avatar state management
+  useEffect(() => {
+    if (isLoading) {
+      setAiAvatarState('typing')
+    } else if (messages.length > 0 && messages[messages.length - 1]?.role === 'assistant') {
+      setAiAvatarState('thinking')
+      setTimeout(() => setAiAvatarState('idle'), 2000)
+    } else {
+      setAiAvatarState('idle')
+    }
+  }, [isLoading, messages])
+
+  // Command palette keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === 'k') {
+        e.preventDefault()
+        setShowCommandPalette(!showCommandPalette)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showCommandPalette])
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+      const recognition = new SpeechRecognition()
+      
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.lang = 'en-US'
+      
+      recognition.onstart = () => {
+        setIsListening(true)
+        setTranscript('')
+      }
+      
+      recognition.onresult = (event: any) => {
+        let finalTranscript = ''
+        let interimTranscript = ''
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript
+          } else {
+            interimTranscript += transcript
+          }
+        }
+        
+        setTranscript(finalTranscript + interimTranscript)
+      }
+      
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error)
+        setIsListening(false)
+      }
+      
+      recognition.onend = () => {
+        setIsListening(false)
+        if (transcript.trim()) {
+          setInput(transcript.trim())
+        }
+      }
+      
+      setRecognition(recognition)
+    }
+  }, [])
+
+  // Audio input functions
+  const startListening = () => {
+    if (recognition) {
+      recognition.start()
+    }
+  }
+
+  const stopListening = () => {
+    if (recognition) {
+      recognition.stop()
+    }
+  }
+
+  const toggleAudioInput = () => {
+    if (isListening) {
+      stopListening()
+    } else {
+      startListening()
+    }
+  }
+
+  // Intent Detection Logic
+  const detectIntent = (text: string) => {
+    for (const pattern of intentPatterns) {
+      if (pattern.pattern.test(text)) {
+        return pattern
+      }
+    }
+    return null
+  }
+
+  // Enhanced input change handler with intent detection
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setInput(value)
+    
+    // Detect intent
+    const detected = detectIntent(value)
+    setDetectedIntent(detected?.intent || null)
+    setShowIntentPreview(!!detected)
+    
+    // Show slash commands
+    if (value.startsWith('/')) {
+      setShowSlashCommands(true)
+    } else {
+      setShowSlashCommands(false)
+    }
+  }
+
+  // Save to favorites
+  const saveToFavorites = () => {
+    if (input.trim() && !favoritePrompts.includes(input.trim())) {
+      setFavoritePrompts(prev => [...prev, input.trim()])
+    }
+  }
+
+  // Save to memory
+  const saveToMemory = () => {
+    if (input.trim()) {
+      setPinnedContext(prev => [...prev, input.trim()])
+    }
+  }
+
+  // Quick Action Templates
+  const quickActions = [
+    { label: "🔁 Rewrite", action: () => setInput("/rewrite ") },
+    { label: "✂ Summarize", action: () => setInput("/summarize ") },
+    { label: "📊 Table", action: () => setInput("/table ") },
+    { label: "🎤 Voice", action: toggleAudioInput },
+    { label: "🧠 Memory", action: () => setShowMemory(!showMemory) },
+    { label: "⏳ History", action: () => setShowHistory(!showHistory) }
+  ]
+
+  return (
+    <div className={cn(
+      "h-screen flex transition-colors duration-200",
+      settings.theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+    )}>
+      {/* Sidebar */}
+      <div className={cn(
+        "border-r flex flex-col transition-all duration-300",
+        settings.theme === 'dark' 
+          ? "bg-gray-800 border-gray-700" 
+          : "bg-white border-gray-200",
+        showSidebar ? "w-64" : "w-12"
+      )}>
+        <div className={cn(
+          "p-4 border-b",
+          settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+        )}>
+                      <div className="flex items-center mb-4">
+              <Brain className="h-6 w-6 text-primary-600 flex-shrink-0" />
+              {showSidebar && (
+                <span className={cn(
+                  "ml-2 font-semibold",
+                  settings.theme === 'dark' ? "text-white" : "text-gray-900"
+                )}>
+                  NeuroPilot
+                </span>
+              )}
+            </div>
+          <button
+            onClick={createNewConversation}
+            className={cn(
+              "btn btn-primary flex items-center justify-center",
+              !showSidebar && "w-8 h-8 p-0"
+            )}
+          >
+            <Plus className="h-4 w-4" />
+            {showSidebar && <span className="ml-2">New Chat</span>}
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-2">
+            {conversations.map(conversation => (
+              <div key={conversation.id} className="group relative">
+                <button
+                  onClick={() => {
+                    setActiveConversation(conversation.id)
+                    setMessages(conversation.messages)
+                  }}
+                  className={cn(
+                    'w-full text-left p-3 rounded-lg transition-colors',
+                    settings.theme === 'dark'
+                      ? 'hover:bg-gray-700 text-gray-200'
+                      : 'hover:bg-gray-100 text-gray-900',
+                    activeConversation === conversation.id && 
+                      (settings.theme === 'dark' 
+                        ? 'bg-primary-900 text-primary-300' 
+                        : 'bg-primary-50 text-primary-700')
+                  )}
+                >
+                  {showSidebar ? (
+                    <>
+                      <div className="font-medium truncate">{conversation.title}</div>
+                      <div className="text-sm text-gray-500">
+                        {conversation.messages.length} messages
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-8 h-8 bg-primary-100 rounded flex items-center justify-center">
+                      <MessageSquare className="h-4 w-4 text-primary-600" />
+                    </div>
+                  )}
+                </button>
+                {showSidebar && (
+                  <button
+                    onClick={() => deleteConversation(conversation.id)}
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                  >
+                    <Trash2 className="h-3 w-3 text-red-500" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={cn(
+          "border-t",
+          settings.theme === 'dark' ? "border-gray-700" : "border-gray-200",
+          showSidebar ? "p-4" : "p-2"
+        )}>
+          <button 
+            onClick={() => setShowSidebar(!showSidebar)}
+            className={cn(
+              "w-full btn btn-ghost flex items-center justify-center",
+              showSidebar ? "p-2" : "p-1",
+              settings.theme === 'dark' ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"
+            )}
+            title={showSidebar ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {showSidebar ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className={cn(
+          "border-b p-4",
+          settings.theme === 'dark' 
+            ? "bg-gray-800 border-gray-700" 
+            : "bg-white border-gray-200"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={cn(
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  activeTab === 'chat'
+                    ? (settings.theme === 'dark' 
+                        ? 'bg-primary-900 text-primary-300' 
+                        : 'bg-primary-100 text-primary-700')
+                    : (settings.theme === 'dark' 
+                        ? 'text-gray-400 hover:text-gray-200' 
+                        : 'text-gray-600 hover:text-gray-900')
+                )}
+              >
+                <MessageSquare className="h-4 w-4 inline mr-2" />
+                Chat
+              </button>
+              <button
+                onClick={() => setActiveTab('document')}
+                className={cn(
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  activeTab === 'document'
+                    ? (settings.theme === 'dark' 
+                        ? 'bg-primary-900 text-primary-300' 
+                        : 'bg-primary-100 text-primary-700')
+                    : (settings.theme === 'dark' 
+                        ? 'text-gray-400 hover:text-gray-200' 
+                        : 'text-gray-600 hover:text-gray-900')
+                )}
+              >
+                <FileText className="h-4 w-4 inline mr-2" />
+                Document
+              </button>
+              <button
+                onClick={() => setActiveTab('tasks')}
+                className={cn(
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  activeTab === 'tasks'
+                    ? (settings.theme === 'dark' 
+                        ? 'bg-primary-900 text-primary-300' 
+                        : 'bg-primary-100 text-primary-700')
+                    : (settings.theme === 'dark' 
+                        ? 'text-gray-400 hover:text-gray-200' 
+                        : 'text-gray-600 hover:text-gray-900')
+                )}
+              >
+                <Zap className="h-4 w-4 inline mr-2" />
+                Tasks
+              </button>
+            </div>
+            <div className="flex items-center space-x-4">
+              {/* History Button */}
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  showHistory && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title="Session history (⌘H)"
+              >
+                <Clock className="h-4 w-4" />
+              </button>
+
+              {/* Memory Toggle */}
+              <button
+                onClick={() => setShowMemory(!showMemory)}
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  showMemory && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title="AI memory & context"
+              >
+                <Brain className="h-4 w-4" />
+              </button>
+
+              {/* Theme Toggle */}
+              <button
+                onClick={() => setSettings(prev => ({ ...prev, theme: prev.theme === 'dark' ? 'light' : 'dark' }))}
+                className="btn btn-ghost p-2 transition-all duration-200 hover:scale-105"
+                title={`Switch to ${settings.theme === 'dark' ? 'light' : 'dark'} mode (⌘T)`}
+              >
+                {settings.theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+
+              {/* Voice Input */}
+              <button 
+                onClick={toggleAudioInput} 
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  isListening && "text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse"
+                )}
+                title={isListening ? "Stop voice input" : "Start voice input (⌘V)"}
+              >
+                {isListening ? <Mic className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </button>
+
+              {/* Audio Output */}
+              <button 
+                onClick={toggleAudioOutput} 
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  isAudioEnabled && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title={isAudioEnabled ? "Disable audio output" : "Enable audio output"}
+              >
+                {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+
+              {/* Search */}
+              <button 
+                onClick={() => setShowSearch(!showSearch)} 
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  showSearch && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title="Search workspace (⌘K)"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+
+              {/* Collaboration */}
+              <button 
+                onClick={() => setShowCollaboration(!showCollaboration)} 
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  showCollaboration && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title="Team collaboration"
+              >
+                <Users2 className="h-4 w-4" />
+              </button>
+
+              {/* Code Execution */}
+              <button 
+                onClick={() => setActiveTab('tasks')} 
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  activeTab === 'tasks' && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title="Code execution & tasks"
+              >
+                <Terminal className="h-4 w-4" />
+              </button>
+
+              {/* Prompt Constructor */}
+              <button 
+                onClick={() => setShowPromptConstructor(true)} 
+                className="btn btn-ghost p-2 transition-all duration-200 hover:scale-105"
+                title="Prompt constructor"
+              >
+                <Layers className="h-4 w-4" />
+              </button>
+
+              {/* Export/Import */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)} 
+                  className="btn btn-ghost p-2 transition-all duration-200 hover:scale-105"
+                  title="Advanced features"
+                >
+                  <Database className="h-4 w-4" />
+                </button>
+                {showAdvancedSettings && (
+                  <div className={cn(
+                    "absolute right-0 top-full mt-1 w-48 border rounded-lg shadow-lg z-10",
+                    settings.theme === 'dark' ? "bg-gray-800 border-gray-600" : "bg-white border-gray-200"
+                  )}>
+                    <button 
+                      onClick={exportWorkspace} 
+                      className={cn(
+                        "w-full text-left p-3 border-b flex items-center space-x-2",
+                        settings.theme === 'dark' ? "hover:bg-gray-700 border-gray-600" : "hover:bg-gray-50 border-gray-100"
+                      )}
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Export Workspace</span>
+                    </button>
+                    <button 
+                      onClick={() => document.getElementById('import-file')?.click()} 
+                      className={cn(
+                        "w-full text-left p-3 flex items-center space-x-2",
+                        settings.theme === 'dark' ? "hover:bg-gray-700" : "hover:bg-gray-50"
+                      )}
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span>Import Workspace</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Performance */}
+              <button 
+                onClick={() => setShowPerformance(!showPerformance)} 
+                className={cn(
+                  "btn btn-ghost p-2 transition-all duration-200 hover:scale-105",
+                  showPerformance && "text-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                )}
+                title="Performance metrics"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </button>
+
+              {/* Fullscreen */}
+              <button 
+                onClick={toggleFullscreen} 
+                className="btn btn-ghost p-2 transition-all duration-200 hover:scale-105"
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen (⌘F)"}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </button>
+
+              {/* AI Model Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowModelSelector(!showModelSelector)}
+                  className={cn(
+                    "flex items-center space-x-2 px-3 py-2 border rounded-lg transition-all duration-200 hover:scale-105",
+                    settings.theme === 'dark'
+                      ? "border-gray-600 hover:bg-gray-700"
+                      : "border-gray-300 hover:bg-gray-50"
+                  )}
+                  title="Select AI model"
+                >
+                  <Brain className="h-4 w-4 text-primary-500" />
+                  <span className="text-sm font-medium">{models.find(m => m.id === selectedModel)?.name}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                {showModelSelector && (
+                  <div className={cn(
+                    "absolute right-0 top-full mt-1 w-64 border rounded-lg shadow-lg z-10",
+                    settings.theme === 'dark' ? "bg-gray-800 border-gray-600" : "bg-white border-gray-200"
+                  )}>
+                    {models.map(model => (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          setSelectedModel(model.id)
+                          setShowModelSelector(false)
+                        }}
+                        className={cn(
+                          "w-full text-left p-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors",
+                          settings.theme === 'dark' ? "hover:bg-gray-700 border-gray-600" : "hover:bg-gray-50 border-gray-100",
+                          selectedModel === model.id && "bg-primary-50 dark:bg-primary-900/20"
+                        )}
+                      >
+                        <div className="font-medium">{model.name}</div>
+                        <div className="text-sm text-gray-500">{model.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Settings */}
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="btn btn-ghost p-2 transition-all duration-200 hover:scale-105"
+                title="Settings (⌘,)"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div 
+          className="flex-1 overflow-hidden"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {activeTab === 'chat' && (
+            <div className="h-full flex flex-col">
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.length === 0 ? (
+                  <div className={cn(
+                    "text-center mt-20",
+                    settings.theme === 'dark' ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    {/* Beautiful Brain Icon Animation */}
+                    <Brain className="h-16 w-16 mx-auto mb-6 text-primary-500 animate-pulse" />
+                    
+                    <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">
+                      {currentGreeting}
+                    </h3>
+                    <p className="text-lg mb-8 opacity-80">How can I help you today? Build a UI, write a blog, or answer deep questions?</p>
+                    
+                    {/* Dynamic Prompt Feed */}
+                    <div className="max-w-2xl mx-auto mb-8">
+                      <div className="text-sm text-gray-500 mb-3">💡 Try these suggestions:</div>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {promptSuggestions.slice(currentPromptIndex, currentPromptIndex + 4).map((suggestion, index) => (
+                          <button
+                            key={suggestion.text}
+                            onClick={() => setInput(suggestion.text)}
+                            className={cn(
+                              "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md",
+                              settings.theme === 'dark'
+                                ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            )}
+                            style={{ animationDelay: `${index * 100}ms` }}
+                          >
+                            <span className="mr-1">{suggestion.icon}</span>
+                            {suggestion.text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                        <button
+                          onClick={() => setInput("Help me write a React component for a todo list")}
+                          className={cn(
+                            "p-4 border rounded-lg text-left transition-colors",
+                            settings.theme === 'dark'
+                              ? "border-gray-700 hover:bg-gray-800"
+                              : "border-gray-200 hover:bg-gray-50"
+                          )}
+                        >
+                        <Code className="h-5 w-5 text-primary-600 mb-2" />
+                        <div className="font-medium">Code Generation</div>
+                        <div className="text-sm text-gray-500">Generate React components, functions, and more</div>
+                      </button>
+                                              <button
+                          onClick={() => setInput("Summarize the key benefits of using TypeScript")}
+                          className={cn(
+                            "p-4 border rounded-lg text-left transition-colors",
+                            settings.theme === 'dark'
+                              ? "border-gray-700 hover:bg-gray-800"
+                              : "border-gray-200 hover:bg-gray-50"
+                          )}
+                        >
+                        <Brain className="h-5 w-5 text-primary-600 mb-2" />
+                        <div className="font-medium">Analysis & Summary</div>
+                        <div className="text-sm text-gray-500">Get insights and summaries on any topic</div>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map(message => (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        'chat-message p-4 rounded-lg border',
+                        message.role === 'user' ? 'chat-message-user ml-12' : 'chat-message-assistant mr-12'
+                      )}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          {message.role === 'user' ? (
+                            <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center">
+                              <span className="text-white text-sm font-medium">U</span>
+                            </div>
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
+                              <Brain className="h-4 w-4 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="font-medium">
+                              {message.role === 'user' ? 'You' : 'NeuroPilot'}
+                            </span>
+                            {message.model && (
+                              <span className="text-xs text-gray-500">({message.model})</span>
+                            )}
+                            <span className="text-xs text-gray-500">
+                              {message.timestamp.toLocaleTimeString()}
+                            </span>
+                            {message.role === 'assistant' && (
+                              <button
+                                onClick={() => copyToClipboard(message.content)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                            {message.content}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {isLoading && (
+                  <div className="chat-message p-4 rounded-lg border chat-message-assistant mr-12">
+                    <div className="flex items-start space-x-3">
+                      <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
+                        <Brain className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="font-medium">NeuroPilot</span>
+                          <span className="text-xs text-gray-500">(thinking...)</span>
+                        </div>
+                        <div className="flex space-x-1">
+                          <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse"></div>
+                          <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className={cn(
+                "border-t p-4",
+                settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+              )}>
+                                  {/* Advanced Command UI */}
+                  <div className="space-y-3">
+                    {/* Intent Preview Bar */}
+                    {showIntentPreview && detectedIntent && (
+                      <div className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border-2 transition-all duration-200",
+                        settings.theme === 'dark'
+                          ? "bg-blue-900/20 border-blue-500/30"
+                          : "bg-blue-50 border-blue-200"
+                      )}>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            Detected: {detectedIntent}
+                          </span>
+                          <span className="text-xs text-blue-600 dark:text-blue-400">
+                            Will use {selectedModel}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-xs text-blue-600 dark:text-blue-400">
+                          <span>⏎ Generate</span>
+                          <span>⇧⏎ Expand</span>
+                          <span>⌘S Save</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Smart Suggestions */}
+                    {input.length > 10 && !showSlashCommands && (
+                      <div className="flex flex-wrap gap-2">
+                        {getSmartSuggestions(input).map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setInput(suggestion)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105",
+                              settings.theme === 'dark'
+                                ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            )}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Command Input Field */}
+                    <div className="flex items-end space-x-3">
+                      {/* Upload Button */}
+                      <button className={cn(
+                        "p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105",
+                        settings.theme === 'dark'
+                          ? "border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white"
+                          : "border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900"
+                      )} title="Upload files">
+                        <Upload className="h-5 w-5" />
+                      </button>
+                      
+                      <div className="flex-1 relative">
+                        <div className={cn(
+                          "relative rounded-xl border-2 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent",
+                          settings.theme === 'dark'
+                            ? "bg-gray-800 border-gray-600 focus-within:bg-gray-700"
+                            : "bg-white border-gray-200 focus-within:bg-gray-50"
+                        )}>
+                          {/* Command Prompt */}
+                          <div className="absolute left-4 top-3 pointer-events-none">
+                            <span className="text-sm text-gray-400 dark:text-gray-500">
+                              🔍 What do you want to do?
+                            </span>
+                          </div>
+                          
+                          <textarea
+                            value={input}
+                            onChange={handleInputChange}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Type / for commands or start typing..."
+                            className={cn(
+                              "w-full resize-none py-8 px-4 bg-transparent outline-none transition-all duration-200",
+                              settings.theme === 'dark'
+                                ? "text-white placeholder-gray-400"
+                                : "text-gray-900 placeholder-gray-500"
+                            )}
+                            style={{ minHeight: '80px', maxHeight: '150px' }}
+                            rows={1}
+                            disabled={isLoading}
+                          />
+                          
+                          {/* Character Counter */}
+                          {input.length > 0 && (
+                            <div className="absolute left-4 bottom-2">
+                              <span className={cn(
+                                "text-xs transition-colors",
+                                input.length > 2000 
+                                  ? "text-red-500" 
+                                  : input.length > 1500 
+                                  ? "text-yellow-500" 
+                                  : "text-gray-400 dark:text-gray-500"
+                              )}>
+                                {input.length}/4000
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Input Actions */}
+                          <div className="absolute right-2 bottom-2 flex items-center space-x-1">
+                            {/* Save to Favorites */}
+                            {input.trim() && (
+                              <button
+                                onClick={saveToFavorites}
+                                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-all duration-200 hover:scale-105"
+                                title="Save to favorites"
+                              >
+                                <Star className="h-4 w-4" />
+                              </button>
+                            )}
+                            
+                            {/* Audio Input Button */}
+                            <button
+                              onClick={toggleAudioInput}
+                              className={cn(
+                                "p-2 rounded-lg transition-all duration-200 hover:scale-105",
+                                isListening 
+                                  ? "bg-red-500 text-white animate-pulse shadow-lg" 
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                              )}
+                              title={isListening ? "Stop recording" : "Start voice input"}
+                            >
+                              {isListening ? (
+                                <div className="flex items-center space-x-1">
+                                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                                  <Mic className="h-4 w-4" />
+                                </div>
+                              ) : (
+                                <Mic className="h-4 w-4" />
+                              )}
+                            </button>
+                            
+                            {/* Send Button */}
+                            <button
+                              onClick={handleSendMessage}
+                              disabled={!input.trim() || isLoading}
+                              className={cn(
+                                "p-2 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed",
+                                input.trim() && !isLoading
+                                  ? "bg-primary-500 text-white hover:bg-primary-600 shadow-lg"
+                                  : "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                              )}
+                              title="Send message (⏎)"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                    
+                                          {/* Slash Commands Dropdown */}
+                      {showSlashCommands && (
+                        <div className={cn(
+                          "absolute bottom-full left-0 right-0 mb-2 border rounded-lg shadow-lg z-10",
+                          settings.theme === 'dark'
+                            ? "bg-gray-800 border-gray-600"
+                            : "bg-white border-gray-200"
+                        )}>
+                          {slashCommands.map((cmd) => (
+                            <button
+                              key={cmd.command}
+                              onClick={() => {
+                                setInput(cmd.command + ' ')
+                                setShowSlashCommands(false)
+                              }}
+                              className={cn(
+                                "w-full text-left p-3 border-b last:border-b-0 flex items-center space-x-3 hover:bg-gray-50 transition-colors",
+                                settings.theme === 'dark'
+                                  ? "hover:bg-gray-700 border-gray-600"
+                                  : "hover:bg-gray-50 border-gray-100"
+                              )}
+                            >
+                              <cmd.icon className="h-4 w-4 text-primary-500" />
+                              <div>
+                                <div className="font-medium">{cmd.command}</div>
+                                <div className="text-sm text-gray-500">{cmd.description}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                                      </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'document' && (
+            <div className="h-full flex flex-col">
+              {/* Document Toolbar */}
+              <div className={cn(
+                "border-b p-4",
+                settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+              )}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Document Editor</h2>
+                  <div className="flex space-x-2">
+                    <button className="btn btn-secondary text-sm">
+                      <Download className="h-4 w-4 mr-1" />
+                      Export
+                    </button>
+                    {aiActions.map((action, index) => (
+                      <button
+                        key={index}
+                        onClick={action.action}
+                        className="btn btn-secondary text-sm"
+                      >
+                        <action.icon className="h-4 w-4 mr-1" />
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Content */}
+              <div className="flex-1 p-4">
+                <div className={cn(
+                  "w-full h-full border rounded-lg overflow-hidden",
+                  settings.theme === 'dark' ? "border-gray-600" : "border-gray-300"
+                )}>
+                  {/* Rich Text Toolbar */}
+                  <div className={cn(
+                    "border-b p-2 flex items-center space-x-2",
+                    settings.theme === 'dark' ? "border-gray-600 bg-gray-800" : "border-gray-200 bg-gray-50"
+                  )}>
+                    <button className="btn btn-ghost p-1" title="Bold">
+                      <Bold className="h-4 w-4" />
+                    </button>
+                    <button className="btn btn-ghost p-1" title="Italic">
+                      <Italic className="h-4 w-4" />
+                    </button>
+                    <button className="btn btn-ghost p-1" title="Underline">
+                      <Underline className="h-4 w-4" />
+                    </button>
+                    <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+                    <button className="btn btn-ghost p-1" title="Heading">
+                      <Code2 className="h-4 w-4" />
+                    </button>
+                    <button className="btn btn-ghost p-1" title="Code Block">
+                      <Code className="h-4 w-4" />
+                    </button>
+                    <button className="btn btn-ghost p-1" title="Quote">
+                      <Quote className="h-4 w-4" />
+                    </button>
+                    <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+                    <button className="btn btn-ghost p-1" title="Align Left">
+                      <AlignLeft className="h-4 w-4" />
+                    </button>
+                    <button className="btn btn-ghost p-1" title="Align Center">
+                      <AlignCenter className="h-4 w-4" />
+                    </button>
+                    <button className="btn btn-ghost p-1" title="Align Right">
+                      <AlignRight className="h-4 w-4" />
+                    </button>
+                    <div className="flex-1" />
+                    <button 
+                      className="btn btn-secondary text-xs"
+                      onClick={() => {
+                        setDocumentHistory(prev => [...prev, documentContent])
+                        setCurrentDocumentVersion(prev => prev + 1)
+                      }}
+                    >
+                      <Save className="h-3 w-3 mr-1" />
+                      Save Version
+                    </button>
+                  </div>
+                  
+                  {/* Document Editor */}
+                  <textarea
+                    value={documentContent}
+                    onChange={(e) => setDocumentContent(e.target.value)}
+                    placeholder="Start writing your document... Use natural language to describe what you want to create. You can also use the AI actions above to enhance your content."
+                    className={cn(
+                      "w-full h-full p-4 resize-none focus:ring-0 focus:border-0 transition-colors",
+                      settings.theme === 'dark'
+                        ? "bg-gray-700 text-white placeholder-gray-400"
+                        : "bg-white text-gray-900 placeholder-gray-500"
+                    )}
+                    style={{ height: 'calc(100% - 48px)' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'tasks' && (
+            <div className="h-full flex flex-col">
+              <div className={cn(
+                "border-b p-4",
+                settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+              )}>
+                                  <h2 className="text-lg font-semibold">Task Mode</h2>
+                  <p className={cn(
+                    "text-sm mt-1",
+                    settings.theme === 'dark' ? "text-gray-400" : "text-gray-600"
+                  )}>
+                    Break down complex tasks into executable steps
+                  </p>
+              </div>
+              
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  {/* Active Tasks */}
+                  {tasks.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-xl font-semibold mb-6 flex items-center">
+                        <Zap className="h-5 w-5 mr-2 text-primary-500" />
+                        Active Tasks
+                      </h3>
+                      <div className="space-y-6">
+                        {tasks.map(task => (
+                          <div key={task.id} className={cn(
+                            "rounded-xl border p-6 shadow-sm transition-all duration-200 hover:shadow-md",
+                            settings.theme === 'dark' 
+                              ? "bg-gray-800 border-gray-700" 
+                              : "bg-white border-gray-200"
+                          )}>
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <h4 className="text-lg font-semibold mb-1">{task.title}</h4>
+                                <p className={cn(
+                                  "text-sm",
+                                  settings.theme === 'dark' ? "text-gray-400" : "text-gray-600"
+                                )}>
+                                  {task.description}
+                                </p>
+                              </div>
+                              <span className={cn(
+                                'px-3 py-1 rounded-full text-xs font-medium',
+                                task.status === 'completed' && 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                task.status === 'running' && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                                task.status === 'failed' && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                task.status === 'pending' && 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                              )}>
+                                {task.status}
+                              </span>
+                            </div>
+                            
+                            {/* Enhanced Step Breakdown */}
+                            <div className="space-y-3">
+                              <h5 className="font-medium text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                                <Target className="h-4 w-4 mr-1" />
+                                Progress Steps:
+                              </h5>
+                              {task.steps.map((step, index) => (
+                                <div key={step.id} className="flex items-center space-x-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                                  <div className={cn(
+                                    'w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-medium',
+                                    step.status === 'completed' && 'bg-green-500 border-green-500 text-white',
+                                    step.status === 'running' && 'bg-blue-500 border-blue-500 text-white animate-pulse',
+                                    step.status === 'failed' && 'bg-red-500 border-red-500 text-white',
+                                    step.status === 'pending' && 'border-gray-300 text-gray-500'
+                                  )}>
+                                    {step.status === 'completed' ? <Check className="h-4 w-4" /> :
+                                     step.status === 'running' ? <Play className="h-4 w-4" /> :
+                                     step.status === 'failed' ? <X className="h-4 w-4" /> :
+                                     index + 1}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">{step.title}</div>
+                                    {step.output && (
+                                      <div className="text-xs text-gray-500 mt-1 bg-gray-100 dark:bg-gray-600 p-2 rounded">
+                                        {step.output}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    {step.status === 'completed' ? '✓ Done' :
+                                     step.status === 'running' ? '⟳ Running' :
+                                     step.status === 'failed' ? '✗ Failed' :
+                                     '⏳ Pending'}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Task Templates */}
+                  <div className={cn(
+                    "rounded-lg border p-6 shadow-sm",
+                    settings.theme === 'dark' 
+                      ? "bg-gray-800 border-gray-700" 
+                      : "bg-white border-gray-200"
+                  )}>
+                    <h3 className="text-lg font-semibold mb-4">Available Templates</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {taskTemplates.map(template => (
+                        <button
+                          key={template.id}
+                          onClick={() => createTask(template)}
+                          className={cn(
+                            "text-left p-4 border rounded-lg transition-colors",
+                            settings.theme === 'dark'
+                              ? "border-gray-700 hover:bg-gray-700"
+                              : "border-gray-200 hover:bg-gray-50"
+                          )}
+                        >
+                          <div className="font-medium mb-2">{template.title}</div>
+                          <div className={cn(
+                            "text-sm mb-3",
+                            settings.theme === 'dark' ? "text-gray-400" : "text-gray-600"
+                          )}>
+                            {template.description}
+                          </div>
+                          <div className={cn(
+                            "text-xs",
+                            settings.theme === 'dark' ? "text-gray-500" : "text-gray-500"
+                          )}>
+                            {template.steps.length} steps
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Audio Input Status */}
+                  {isListening && (
+                    <div className={cn(
+                      "border-t p-3 bg-red-50 dark:bg-red-900/20",
+                      settings.theme === 'dark' ? "border-red-700" : "border-red-200"
+                    )}>
+                      <div className="flex items-center justify-center space-x-2 text-red-600 dark:text-red-400">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                        <span className="text-sm font-medium">Listening... {transcript && `"${transcript}"`}</span>
+                        <button
+                          onClick={stopListening}
+                          className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                        >
+                          Stop
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Action Shortcut Bar */}
+                  {showQuickActions && (
+                    <div className={cn(
+                      "border-t p-3",
+                      settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+                    )}>
+                      <div className="flex items-center justify-center space-x-2">
+                        {quickActions.map((action, index) => (
+                          <button
+                            key={action.label}
+                            onClick={action.action}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 hover:shadow-sm",
+                              settings.theme === 'dark'
+                                ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            )}
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setShowQuickActions(false)}
+                          className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={cn(
+            "rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto",
+            settings.theme === 'dark' ? "bg-gray-800" : "bg-white"
+          )}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Account Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  Account
+                </h3>
+                
+                {user.isLoggedIn ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-semibold">
+                          {user.name ? user.name[0].toUpperCase() : 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-medium">{user.name || 'User'}</div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">Subscription</span>
+                        <span className={cn(
+                          "px-2 py-1 rounded-full text-xs font-medium",
+                          user.subscription === 'pro' ? "bg-primary-100 text-primary-800" : "bg-gray-200 text-gray-700"
+                        )}>
+                          {user.subscription === 'pro' ? 'Pro' : 'Free'}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {user.usage.requests} / {user.usage.limit} requests used
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-primary-600 h-2 rounded-full" 
+                          style={{ width: `${(user.usage.requests / user.usage.limit) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    <button className="w-full btn btn-secondary">
+                      Upgrade to Pro
+                    </button>
+                    <button className="w-full btn btn-ghost text-red-600 hover:text-red-700">
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">Sign in to sync your settings and access premium features.</p>
+                    <button className="w-full btn btn-primary">
+                      Sign In
+                    </button>
+                    <button className="w-full btn btn-secondary">
+                      Create Account
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Preferences Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Settings className="h-5 w-5 mr-2" />
+                  Preferences
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block font-medium mb-2">Theme</label>
+                    <select
+                      value={settings.theme}
+                      onChange={(e) => setSettings(prev => ({ ...prev, theme: e.target.value }))}
+                      className={cn(
+                        "w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                        settings.theme === 'dark' ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
+                      )}
+                    >
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                      <option value="auto">Auto (System)</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block font-medium mb-2">Font Size</label>
+                    <select
+                      value={settings.fontSize}
+                      onChange={(e) => setSettings(prev => ({ ...prev, fontSize: e.target.value }))}
+                      className={cn(
+                        "w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                        settings.theme === 'dark' ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
+                      )}
+                    >
+                      <option value="small">Small</option>
+                      <option value="medium">Medium</option>
+                      <option value="large">Large</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block font-medium mb-2">Language</label>
+                    <select
+                      value={settings.language}
+                      onChange={(e) => setSettings(prev => ({ ...prev, language: e.target.value }))}
+                      className={cn(
+                        "w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                        settings.theme === 'dark' ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
+                      )}
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Español</option>
+                      <option value="fr">Français</option>
+                      <option value="de">Deutsch</option>
+                      <option value="ja">日本語</option>
+                      <option value="zh">中文</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Behavior Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Zap className="h-5 w-5 mr-2" />
+                  Behavior
+                </h3>
+                
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.autoSave}
+                      onChange={(e) => setSettings(prev => ({ ...prev, autoSave: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Auto-save conversations</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.enableNotifications}
+                      onChange={(e) => setSettings(prev => ({ ...prev, enableNotifications: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Enable notifications</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.enableSound}
+                      onChange={(e) => setSettings(prev => ({ ...prev, enableSound: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Enable sound effects</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.autoScroll}
+                      onChange={(e) => setSettings(prev => ({ ...prev, autoScroll: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Auto-scroll to new messages</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.compactMode}
+                      onChange={(e) => setSettings(prev => ({ ...prev, compactMode: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Compact mode</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Editor Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Code className="h-5 w-5 mr-2" />
+                  Editor
+                </h3>
+                
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.showLineNumbers}
+                      onChange={(e) => setSettings(prev => ({ ...prev, showLineNumbers: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Show line numbers</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.enableAutoComplete}
+                      onChange={(e) => setSettings(prev => ({ ...prev, enableAutoComplete: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Enable auto-complete</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.enableSpellCheck}
+                      onChange={(e) => setSettings(prev => ({ ...prev, enableSpellCheck: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="font-medium">Enable spell check</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="btn btn-primary"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden File Input for Import */}
+      <input
+        id="import-file"
+        type="file"
+        accept=".json"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) {
+            importWorkspace(file)
+          }
+        }}
+        className="hidden"
+      />
+
+      {/* Advanced Features Panels */}
+      
+      {/* Search Panel */}
+      {showSearch && (
+        <div className={cn(
+          "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center",
+          settings.theme === 'dark' ? "text-white" : "text-gray-900"
+        )}>
+          <div className={cn(
+            "w-full max-w-2xl mx-4 p-6 rounded-lg shadow-xl",
+            settings.theme === 'dark' ? "bg-gray-800" : "bg-white"
+          )}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Search className="h-5 w-5 mr-2" />
+                Search Workspace
+              </h2>
+              <button
+                onClick={() => setShowSearch(false)}
+                className="btn btn-ghost p-2"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search conversations, documents, tasks..."
+              value={searchQuery}
+              onChange={(e) => searchWorkspace(e.target.value)}
+              className={cn(
+                "w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                settings.theme === 'dark' ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
+              )}
+            />
+            <div className="mt-4 text-sm text-gray-500">
+              Search results will appear here...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Collaboration Panel */}
+      {showCollaboration && (
+        <div className={cn(
+          "fixed right-4 top-20 w-80 p-4 rounded-lg shadow-xl z-40",
+          settings.theme === 'dark' ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+        )}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center">
+              <Users2 className="h-4 w-4 mr-2" />
+              Collaboration
+            </h3>
+            <button
+              onClick={() => setShowCollaboration(false)}
+              className="btn btn-ghost p-1"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {collaborationUsers.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4">
+                No collaborators yet
+              </div>
+            ) : (
+              collaborationUsers.map(user => (
+                <div key={user.id} className="flex items-center space-x-3 p-2 rounded">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    user.status === 'online' ? "bg-green-500" : 
+                    user.status === 'away' ? "bg-yellow-500" : "bg-gray-400"
+                  )} />
+                  <span className="text-sm font-medium">{user.name}</span>
+                  <span className="text-xs text-gray-500">{user.status}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Panel */}
+      {showPerformance && (
+        <div className={cn(
+          "fixed right-4 top-20 w-80 p-4 rounded-lg shadow-xl z-40",
+          settings.theme === 'dark' ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+        )}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Performance
+            </h3>
+            <button
+              onClick={() => setShowPerformance(false)}
+              className="btn btn-ghost p-1"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm">Response Time:</span>
+              <span className="text-sm font-medium">{performanceMetrics.responseTime}ms</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm">Memory Usage:</span>
+              <span className="text-sm font-medium">{performanceMetrics.memoryUsage}MB</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm">CPU Usage:</span>
+              <span className="text-sm font-medium">{performanceMetrics.cpuUsage}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm">Network Latency:</span>
+              <span className="text-sm font-medium">{performanceMetrics.networkLatency}ms</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Panel */}
+      {showHistory && (
+        <div className={cn(
+          "fixed right-4 top-20 w-80 p-4 rounded-lg shadow-xl z-40",
+          settings.theme === 'dark' ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+        )}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center">
+              <Clock className="h-4 w-4 mr-2" />
+              Session History
+            </h3>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="btn btn-ghost p-1"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {conversations.slice(0, 10).map(conversation => (
+              <div key={conversation.id} className="p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                <div className="font-medium text-sm">{conversation.title}</div>
+                <div className="text-xs text-gray-500">
+                  {conversation.messages.length} messages • {conversation.updatedAt.toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Command Palette */}
+      {showCommandPalette && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={cn(
+            "w-96 max-h-96 overflow-hidden rounded-xl shadow-2xl",
+            settings.theme === 'dark' ? "bg-gray-800" : "bg-white"
+          )}>
+            <div className={cn(
+              "p-4 border-b",
+              settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+            )}>
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search commands... (⌘K to close)"
+                  className="flex-1 bg-transparent outline-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {commandPaletteOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    option.action()
+                    setShowCommandPalette(false)
+                  }}
+                  className={cn(
+                    "w-full p-3 text-left flex items-center space-x-3 hover:bg-gray-50 transition-colors",
+                    settings.theme === 'dark' ? "hover:bg-gray-700" : "hover:bg-gray-50"
+                  )}
+                >
+                  <option.icon className="h-4 w-4 text-gray-500" />
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Memory Panel */}
+      {showMemory && (
+        <div className={cn(
+          "fixed right-4 top-20 w-80 p-4 rounded-lg shadow-xl z-40",
+          settings.theme === 'dark' ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+        )}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center">
+              <Brain className="h-4 w-4 mr-2" />
+              AI Memory & Context
+            </h3>
+            <button
+              onClick={() => setShowMemory(false)}
+              className="btn btn-ghost p-1"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            <div className="text-sm">
+              <div className="font-medium mb-2">Current Context:</div>
+              <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                {activeConversation ? 
+                  `Active conversation: ${conversations.find(c => c.id === activeConversation)?.title}` :
+                  'No active conversation'
+                }
+              </div>
+            </div>
+            <div className="text-sm">
+              <div className="font-medium mb-2">Pinned Context:</div>
+              <div className="space-y-1">
+                {pinnedContext.length > 0 ? (
+                  pinnedContext.map((context, index) => (
+                    <div key={index} className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700 p-2 rounded flex items-center justify-between">
+                      <span>{context}</span>
+                      <button
+                        onClick={() => setPinnedContext(prev => prev.filter((_, i) => i !== index))}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-400">No pinned context</div>
+                )}
+              </div>
+            </div>
+            <div className="text-sm">
+              <div className="font-medium mb-2">Recent Topics:</div>
+              <div className="space-y-1">
+                {conversations.slice(0, 3).map(conv => (
+                  <div key={conv.id} className="text-xs text-gray-500">
+                    • {conv.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="text-sm">
+              <div className="font-medium mb-2">Memory Usage:</div>
+              <div className="text-xs text-gray-500">
+                {conversations.length} conversations stored
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Constructor */}
+      {showPromptConstructor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={cn(
+            "w-[600px] max-h-[500px] overflow-hidden rounded-xl shadow-2xl",
+            settings.theme === 'dark' ? "bg-gray-800" : "bg-white"
+          )}>
+            <div className={cn(
+              "p-4 border-b",
+              settings.theme === 'dark' ? "border-gray-700" : "border-gray-200"
+            )}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">🧩 Prompt Constructor</h3>
+                <button
+                  onClick={() => setShowPromptConstructor(false)}
+                  className="btn btn-ghost p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Build your prompt like LEGO blocks:
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {promptBlocks.map((block) => (
+                  <div key={block.type} className="space-y-2">
+                    <label className="text-sm font-medium capitalize">{block.type}:</label>
+                    <select className={cn(
+                      "w-full p-2 rounded border text-sm",
+                      settings.theme === 'dark' ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
+                    )}>
+                      {block.options.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setInput("Generated prompt will appear here...")
+                    setShowPromptConstructor(false)
+                  }}
+                  className="w-full btn btn-primary"
+                >
+                  🚀 Generate & Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drag & Drop Overlay */}
+      {isDragOver && (
+        <div className="fixed inset-0 bg-primary-500 bg-opacity-20 border-4 border-dashed border-primary-500 z-50 flex items-center justify-center">
+          <div className="text-center">
+            <Upload className="h-16 w-16 mx-auto mb-4 text-primary-500" />
+            <h3 className="text-xl font-semibold mb-2">Drop files here</h3>
+            <p className="text-sm text-gray-600">Upload files to your workspace</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+} 

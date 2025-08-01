@@ -1,0 +1,67 @@
+{
+  "openai": {
+    "apiKey": "your-openai-api-key-here",
+    "organization": "your-org-id-here"
+  },
+  "anthropic": {
+    "apiKey": "your-anthropic-api-key-here"
+  },
+  "router": {
+    "defaultModel": "gpt-4",
+    "fallbackModel": "gpt-3.5-turbo",
+    "routingRules": [
+      {
+        "condition": "query.includes('summarize') || query.includes('summary')",
+        "modelId": "claude-3-sonnet",
+        "priority": 1
+      },
+      {
+        "condition": "query.includes('code') || query.includes('function') || query.includes('component')",
+        "modelId": "gpt-4",
+        "priority": 1
+      },
+      {
+        "condition": "query.length > 1000",
+        "modelId": "gpt-4-turbo",
+        "priority": 2
+      },
+      {
+        "condition": "query.includes('creative') || query.includes('story') || query.includes('write')",
+        "modelId": "claude-3-opus",
+        "priority": 1
+      }
+    ]
+  },
+  "models": {
+    "gpt-4": {
+      "enabled": true,
+      "maxTokens": 8192,
+      "temperature": 0.7
+    },
+    "gpt-4-turbo": {
+      "enabled": true,
+      "maxTokens": 128000,
+      "temperature": 0.7
+    },
+    "gpt-3.5-turbo": {
+      "enabled": true,
+      "maxTokens": 4096,
+      "temperature": 0.7
+    },
+    "claude-3-opus": {
+      "enabled": true,
+      "maxTokens": 200000,
+      "temperature": 0.7
+    },
+    "claude-3-sonnet": {
+      "enabled": true,
+      "maxTokens": 200000,
+      "temperature": 0.7
+    },
+    "claude-3-haiku": {
+      "enabled": true,
+      "maxTokens": 200000,
+      "temperature": 0.7
+    }
+  }
+} 
