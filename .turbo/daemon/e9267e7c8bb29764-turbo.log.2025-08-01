@@ -347,3 +347,20 @@
 2025-08-01T14:49:55.039452Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
 2025-08-01T14:51:00.435167Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".gitignore")}
 2025-08-01T14:51:00.435181Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-01T14:53:05.237310Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web-client/app/about/page.tsx")}
+2025-08-01T14:53:05.237328Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@neuropilot/web-client"), path: AnchoredSystemPathBuf("apps/web-client") }}))
+2025-08-01T14:53:05.337859Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web-client/app/about/page.tsx")}
+2025-08-01T14:53:05.337873Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@neuropilot/web-client"), path: AnchoredSystemPathBuf("apps/web-client") }}))
+2025-08-01T14:53:05.337911Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-01T14:53:16.561666Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web-client/app/about/page.tsx")}
+2025-08-01T14:53:16.561685Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@neuropilot/web-client"), path: AnchoredSystemPathBuf("apps/web-client") }}))
+2025-08-01T14:53:16.638165Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web-client/app/about/page.tsx")}
+2025-08-01T14:53:16.638179Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@neuropilot/web-client"), path: AnchoredSystemPathBuf("apps/web-client") }}))
+2025-08-01T14:53:16.638212Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-01T14:53:42.838711Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("README.md")}
+2025-08-01T14:53:42.838726Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-01T14:53:47.638616Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("README.md")}
+2025-08-01T14:53:47.638630Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-01T14:54:14.038059Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("README.md"), AnchoredSystemPathBuf("apps/web-client/app/about/page.tsx")}
+2025-08-01T14:54:14.038072Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@neuropilot/web-client"), path: AnchoredSystemPathBuf("apps/web-client") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-01T14:54:14.038110Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
