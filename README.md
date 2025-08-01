@@ -68,7 +68,7 @@ neuropilot/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/neuropilot.git
+   git clone https://github.com/almightymoon/Neuropilot.git
    cd neuropilot
    ```
 
@@ -174,8 +174,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 - **Documentation**: [docs.neuropilot.ai](https://docs.neuropilot.ai)
-- **Issues**: [GitHub Issues](https://github.com/your-username/neuropilot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/neuropilot/discussions)
+- **Issues**: [GitHub Issues](https://github.com/almightymoon/Neuropilot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/almightymoon/Neuropilot/discussions)
 - **Email**: support@neuropilot.ai
 
 ## 🗺️ Roadmap

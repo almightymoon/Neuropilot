@@ -348,7 +348,7 @@ export default function AboutPage() {
             <Link href="/workspace" className="btn btn-primary text-lg px-8 py-3">
               Try NeuroPilot Free
             </Link>
-            <Link href="https://github.com/neuropilot" className="btn btn-secondary text-lg px-8 py-3">
+            <Link href="https://github.com/almightymoon/Neuropilot" className="btn btn-secondary text-lg px-8 py-3">
               <Github className="h-5 w-5 mr-2" />
               View on GitHub
             </Link>
@@ -369,7 +369,7 @@ export default function AboutPage() {
                 Your all-in-one AI workspace assistant
               </p>
               <div className="flex space-x-4">
-                <Link href="#" className="text-gray-400 hover:text-white">
+                <Link href="https://github.com/almightymoon/Neuropilot" className="text-gray-400 hover:text-white">
                   <Github className="h-5 w-5" />
                 </Link>
                 <Link href="#" className="text-gray-400 hover:text-white">
